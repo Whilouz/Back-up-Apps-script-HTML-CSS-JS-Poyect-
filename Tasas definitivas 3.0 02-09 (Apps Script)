@@ -1,0 +1,54 @@
+// ================== ACTUALIZAR TASAS DESDE API ==================
+function actualizarTasas() {
+  var hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("tasa_cambio");
+
+  if (!hoja) {
+    hoja = SpreadsheetApp.getActiveSpreadsheet().insertSheet("tasa_cambio");
+    hoja.appendRow(["Fecha", "Hora", "USD/VEF", "EUR/VEF", "Fuente"]);
+  }
+
+  try {
+    var response = UrlFetchApp.fetch("https://open.er-api.com/v6/latest/USD");
+    var data = JSON.parse(response.getContentText());
+
+    if (data && data.rates) {
+      var usdVes = data.rates.VES || null;
+      var usdEur = data.rates.EUR || null;
+      var eurVes = (usdVes && usdEur) ? usdVes / usdEur : null;
+
+      var fecha = Utilities.formatDate(new Date(), "GMT-4", "dd/MM/yyyy");
+      var hora  = Utilities.formatDate(new Date(), "GMT-4", "HH:mm:ss");
+
+      hoja.appendRow([fecha, hora, usdVes, eurVes, "open.er-api.com"]);
+
+      // Después de actualizar la tasa, actualizar precios en inventario
+      actualizarPreciosVES();
+    }
+  } catch(err) {
+    Logger.log("Error al actualizar tasas: " + err.message);
+  }
+}
+
+// ================== CREAR TRIGGERS AUTOMÁTICOS ==================
+function crearTriggers() {
+  var allTriggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < allTriggers.length; i++) {
+    if (allTriggers[i].getHandlerFunction() === "actualizarTasas") {
+      ScriptApp.deleteTrigger(allTriggers[i]);
+    }
+  }
+
+  ScriptApp.newTrigger("actualizarTasas")
+           .timeBased()
+           .everyDays(1)
+           .atHour(9)
+           .inTimezone("America/Caracas")
+           .create();
+
+  ScriptApp.newTrigger("actualizarTasas")
+           .timeBased()
+           .everyDays(1)
+           .atHour(13)
+           .inTimezone("America/Caracas")
+           .create();
+}
