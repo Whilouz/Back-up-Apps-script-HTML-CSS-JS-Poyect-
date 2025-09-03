@@ -1,0 +1,83 @@
+// ================== CREAR MENÚ DESPLEGABLE EN "Estado" ==================
+function configurarValidacionEstado() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Pedidos");
+  if (!sheet) return;
+
+  var colEstado = 5; // Columna E
+  var numFilas = sheet.getMaxRows() - 1;
+  var rango = sheet.getRange(2, colEstado, numFilas);
+
+  var regla = SpreadsheetApp.newDataValidation()
+    .requireValueInList(["Pendiente", "Pagado", "Cancelado"], true)
+    .setAllowInvalid(false)
+    .build();
+
+  rango.setDataValidation(regla);
+}
+
+// ================== COLORES DE ESTADO ==================
+function actualizarColoresEstados() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Pedidos");
+  if (!sheet) return;
+
+  var data = sheet.getDataRange().getValues();
+  var colEstado = 5;
+
+  for (var i = 1; i < data.length; i++) {
+    var estado = data[i][colEstado - 1];
+    var color = "#FFFFFF"; // default
+
+    if (estado === "Pendiente") color = "#FFF59D"; // amarillo pastel claro
+    else if (estado === "Pagado") color = "#A5D6A7"; // verde pastel claro
+    else if (estado === "Cancelado") color = "#EF9A9A"; // rojo pastel claro
+
+    sheet.getRange(i + 1, colEstado).setBackground(color);
+  }
+}
+
+
+// ================== ON EDIT PEDIDOS ==================
+function onEdit(e) {
+  var sheet = e.range.getSheet();
+  if (sheet.getName() !== "Pedidos") return;
+
+  var colEstado = 5;
+  if (e.range.columnStart === colEstado) {
+    var row = e.range.rowStart;
+    var nuevoEstado = e.value;
+    var estadoAnterior = e.oldValue;
+
+    var producto = sheet.getRange(row, 3).getValue();
+    var cantidad = parseInt(sheet.getRange(row, 4).getValue(), 10);
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheetInv = ss.getSheetByName("Inventario");
+    if (!sheetInv) return;
+
+    var invValues = sheetInv.getDataRange().getValues();
+    var headers = invValues[0].map(h => String(h || "").trim());
+    var idxProd = headers.indexOf("Producto");
+    var idxStock = headers.indexOf("Stock");
+    if (idxProd === -1 || idxStock === -1) return;
+
+    for (var i = 1; i < invValues.length; i++) {
+      if (String(invValues[i][idxProd]) === String(producto)) {
+        var stockCell = sheetInv.getRange(i + 1, idxStock + 1);
+        var stockActual = parseInt(stockCell.getValue() || 0, 10);
+
+        if (nuevoEstado === "Pagado" && estadoAnterior !== "Pagado") {
+          stockCell.setValue(stockActual - cantidad);
+        } else if (nuevoEstado === "Cancelado" && estadoAnterior === "Pagado") {
+          stockCell.setValue(stockActual + cantidad);
+        }
+
+        actualizarColoresStock(); // 🔥 actualizar colores del stock
+        break;
+      }
+    }
+    actualizarColoresEstados();
+  }
+}
+
+
