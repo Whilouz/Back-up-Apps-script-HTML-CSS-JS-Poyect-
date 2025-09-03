@@ -1,0 +1,121 @@
+// ================== OBTENER LA TASA USD → VES ==================
+function obtenerTasaUSD() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hojaTasa = ss.getSheetByName("tasa_cambio");
+  if (!hojaTasa) return 145.75;
+
+  var lastRow = hojaTasa.getLastRow();
+  if (lastRow < 2) return 145.75;
+
+  var tasaUSD = hojaTasa.getRange(lastRow, 3).getValue(); // Col C = USD/VEF
+  return parseFloat(tasaUSD) || 145.75;
+}
+
+function doGet(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Inventario");
+  if (!sheet) {
+    return ContentService.createTextOutput(
+      JSON.stringify({status:"error", message:"Hoja 'Inventario' no encontrada"})
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var data = sheet.getDataRange().getValues();
+  var headers = data.shift(); // primera fila como encabezados
+  var items = data.map(row => {
+    var obj = {};
+    headers.forEach((h,i) => obj[h] = row[i]);
+    return obj;
+  });
+
+  return ContentService.createTextOutput(JSON.stringify(items))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    // 1️⃣ Leer parámetros
+    var params = {};
+    if (e.parameter && Object.keys(e.parameter).length) {
+      params = e.parameter;
+    } else if (e.postData && e.postData.contents) {
+      try { params = JSON.parse(e.postData.contents); } catch(err){ params = {}; }
+    }
+
+    var nombre = params.nombre_apellido || "";
+    var telefono = params.telefono_contacto || "";
+    var producto = params.producto || "";
+    var cantidad = parseInt(params.cantidad) || 0;
+    var ubicacion = params.ubicacion || "";
+    var tasa = params.tasa_actual || "";
+    var total_usd = params.total_usd || "";
+    var total_ves = params.total || "";
+
+    if (!nombre || !telefono || !producto || cantidad <= 0) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status:"error", message:"Parámetros inválidos"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 2️⃣ Guardar en la hoja "Pedidos"
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var hojaPedidos = ss.getSheetByName("Pedidos");
+    if (hojaPedidos) {
+      hojaPedidos.appendRow([
+        nombre,
+        telefono,
+        producto,
+        cantidad,
+        "Pendiente",
+        ubicacion,
+        tasa,
+        total_usd,
+        total_ves
+      ]);
+    }
+
+    // 3️⃣ Enviar a Telegram
+    var token = "8498687508:AAGaMPGfdG7Xm5eHULzUcS7M9ufnSLRTK5w"; // reemplaza con tu token
+    var chat_id = "1629181867"; // reemplaza con tu chat o grupo
+
+    var caption = "📌 Nuevo pedido:\nNombre: " + nombre +
+                  "\nTeléfono: " + telefono +
+                  "\nProducto: " + producto +
+                  "\nCantidad: " + cantidad +
+                  (ubicacion ? "\nUbicación: " + ubicacion : "") +
+                  "\nTotal USD: " + total_usd +
+                  "\nTotal VES: " + total_ves;
+
+    // Si viene base64 del comprobante
+    if (params.comprobante_base64 && params.comprobante_name) {
+      var blob = Utilities.newBlob(Utilities.base64Decode(params.comprobante_base64), "image/png", params.comprobante_name);
+      UrlFetchApp.fetch("https://api.telegram.org/bot" + token + "/sendDocument", {
+        method: "post",
+        payload: {
+          chat_id: chat_id,
+          document: blob,
+          caption: caption
+        }
+      });
+    } else {
+      UrlFetchApp.fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
+        method: "post",
+        payload: {
+          chat_id: chat_id,
+          text: caption
+        }
+      });
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status:"ok",
+      message:"Pedido guardado y enviado a Telegram ✅"
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status:"error",
+      message: err.message
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
