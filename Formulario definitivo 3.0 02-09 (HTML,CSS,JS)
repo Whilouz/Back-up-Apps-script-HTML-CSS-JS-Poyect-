@@ -1,0 +1,241 @@
+<div style="max-width:480px; margin:30px auto; font-family:system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            background:#f5f6f8; padding:28px; border-radius:14px; border:1px solid #cfd6e0;
+            box-shadow:0 4px 14px rgba(0,0,0,0.08); color:#0f2438;">
+  
+  <h2 style="text-align:center; color:#0f2438; margin:0 0 16px; font-weight:700; font-size:20px;">
+    Enviar Comprobante de Pago
+  </h2>
+
+  <div style="background:#e9f1fb; border:1px solid #3a6ea5; padding:12px 14px; border-radius:10px; margin-bottom:18px; font-size:14px;">
+    <strong>Tasa actual:</strong>
+    <span id="valorTasaUSD" style="font-weight:600;">Cargando…</span><br>
+    <strong>Tasa actual:</strong>
+    <span id="valorTasaEUR" style="font-weight:600;">Cargando…</span>
+    <span id="fuenteTasa" style="color:#3a6ea5;"></span>
+  </div>
+
+  <p style="font-size:13.5px; margin:0 0 16px; color:#30465a; text-align:center;">
+    Ingresa tus datos, el producto y la cantidad, sube tu comprobante y confirma tu pago.  
+    Puedes adjuntar PNG/JPG y compartir tu ubicación para coordinar entrega.
+  </p>
+
+  <div style="background:#eef3f7; border:1px dashed #9bb3c9; padding:12px 14px; border-radius:10px; margin-bottom:20px; font-size:13.5px;">
+    <strong>Datos de Pago Móvil (Ejemplo):</strong><br>
+    <b>C.I:</b> V-12345678<br>
+    <b>Teléfono:</b> 0412-9876543<br>
+    <b>Banco:</b> Banco de Venezuela
+  </div>
+
+  <form id="comprobanteForm" method="POST" enctype="multipart/form-data" style="margin:0;">
+    
+    <label style="display:block; font-size:13px; margin:0 0 6px;">Nombre y Apellido</label>
+    <input type="text" name="nombre_apellido" required
+           style="width:100%; padding:11px 12px; margin:0 0 14px; border:1px solid #3a6ea5; border-radius:8px; background:#fff; color:#0f2438; font-size:14px;">
+
+    <label style="display:block; font-size:13px; margin:0 0 6px;">Teléfono de contacto (Venezuela)</label>
+    <input type="tel" name="telefono_contacto" placeholder="Ej: 0412-1234567"
+           pattern="^(0412|0414|0416|0424|0426)-?\d{7}$" required
+           style="width:100%; padding:11px 12px; margin:0 0 14px; border:1px solid #3a6ea5; border-radius:8px; background:#fff; color:#0f2438; font-size:14px;">
+
+    <label style="display:block; font-size:13px; margin:0 0 6px;">Categoría</label>
+    <select id="categoriaSelect" name="categoria" required
+            style="width:100%; padding:11px 12px; margin:0 0 14px; border:1px solid #3a6ea5; border-radius:8px; background:#fff; color:#0f2438; font-size:14px;">
+      <option value="">Selecciona una categoría…</option>
+    </select>
+
+    <label style="display:block; font-size:13px; margin:0 0 6px;">Producto deseado</label>
+    <select name="producto" id="productoSelect" required
+            style="width:100%; padding:11px 12px; margin:0 0 14px; border:1px solid #3a6ea5; border-radius:8px; background:#fff; color:#0f2438; font-size:14px;">
+      <option value="">Selecciona primero una categoría…</option>
+    </select>
+
+    <label style="display:block; font-size:13px; margin:0 0 6px;">Cantidad</label>
+    <select name="cantidad" id="cantidadSelect" required
+            style="width:100%; padding:11px 12px; margin:0 0 14px; border:1px solid #3a6ea5; border-radius:8px; background:#fff; color:#0f2438; font-size:14px;">
+      <option value="">Selecciona la cantidad…</option>
+    </select>
+
+    <div id="precioInfo" style="margin:10px 0; font-size:14px; color:#0f2438; font-weight:600; text-align:center;"></div>
+
+    <button type="button" id="getLocationBtn"
+            style="width:100%; padding:10px 12px; margin:0 0 14px; border:none; border-radius:8px; background:#3a6ea5; color:#fff; font-size:14px; cursor:pointer;">
+      📍 Enviar mi ubicación (opcional)
+    </button>
+    <div id="locStatus" style="font-size:12.5px; color:#3a6ea5; margin:-8px 0 12px; display:none;"></div>
+    <input type="hidden" name="ubicacion" id="ubicacion">
+
+    <label style="display:block; font-size:13px; margin:0 0 6px;">Comprobante (PNG/JPG)</label>
+    <input type="file" name="comprobante" accept=".png,.jpg,.jpeg" required
+           style="width:100%; padding:9px 10px; margin:0 0 18px; border:1px solid #3a6ea5; border-radius:8px; background:#fff; color:#0f2438; font-size:14px;">
+
+    <input type="hidden" name="tasa_actual" id="tasa_actual">
+    <input type="hidden" name="total" id="total">
+    <input type="hidden" name="total_usd" id="total_usd">
+    <input type="hidden" name="tasa_usd_ves_num" id="tasa_usd_ves_num">
+
+    <button type="submit" id="enviarBtn" class="btn-formal"
+            style="width:100%; padding:12px; font-size:16px; font-weight:600; border:none; border-radius:8px; cursor:pointer; color:#fff;
+                   background:linear-gradient(90deg,#0f2438,#3a6ea5); transition:background .25s ease, transform .2s ease;">
+      Confirmar y Enviar
+    </button>
+  </form>
+
+  <div id="msgExito" style="display:none; margin-top:18px; text-align:center; color:#1e6f2d; font-size:15px; font-weight:600;">
+    ✔️ ¡Gracias! Tu comprobante fue enviado con éxito.
+  </div>
+</div>
+
+<script>
+let inventarioData = [];
+let tasaUSD_VES = 0;
+let tasaEUR_VES = 0;
+
+async function cargarInventario() {
+  try {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbxVMifzlzzNp6xpd8bTX42KkWuj6k9AE8OnO02XfVaw-NB50a5oKPD2_Sc7UK0mxQ1d/exec");
+    const data = await res.json();
+    inventarioData = data; 
+
+    const categorias = [...new Set(data.map(item => item.Categoria))];
+    const selectCat = document.getElementById("categoriaSelect");
+
+    selectCat.innerHTML = '<option value="">Selecciona una categoría…</option>';
+    categorias.forEach(cat => selectCat.innerHTML += `<option value="${cat}">${cat}</option>`);
+
+    selectCat.addEventListener("change", function() {
+      const categoria = this.value;
+      const selectProd = document.getElementById("productoSelect");
+      const selectCant = document.getElementById("cantidadSelect");
+      selectProd.innerHTML = '<option value="">Selecciona un producto…</option>';
+      selectCant.innerHTML = '<option value="">Selecciona la cantidad…</option>';
+      if(!categoria) return;
+      data.filter(p => p.Categoria===categoria).forEach(item => {
+        selectProd.innerHTML += `<option value="${item.Producto}" data-usd="${item["Precio USD"]}" data-ves="${item["Precio VES"]}" data-stock="${item.Stock}">${item.Producto} - $${item["Precio USD"]}</option>`;
+      });
+    });
+  } catch(err){
+    alert("⚠️ No se pudieron cargar los productos.");
+  }
+}
+
+function actualizarCantidadYPrecio() {
+  const selectProd = document.getElementById("productoSelect");
+  const selectCant = document.getElementById("cantidadSelect");
+  const precioInfo = document.getElementById("precioInfo");
+
+  selectProd.addEventListener("change", function() {
+    const producto = selectProd.value;
+    selectCant.innerHTML = '<option value="">Selecciona la cantidad…</option>';
+    precioInfo.textContent = "";
+    if(!producto) return;
+    const item = inventarioData.find(p => p.Producto===producto);
+    if(item && parseInt(item.Stock)>0){
+      for(let i=1;i<=item.Stock;i++) selectCant.innerHTML += `<option value="${i}">${i}</option>`;
+    }
+  });
+
+  selectCant.addEventListener("change", function(){
+    const producto = selectProd.value;
+    const cantidad = parseInt(selectCant.value) || 0;
+    if(!producto || !cantidad) { precioInfo.textContent=""; return; }
+    const item = inventarioData.find(p=>p.Producto===producto);
+    if(item){
+      const usd = parseFloat(item["Precio USD"])*cantidad;
+      const vesUSD = usd * tasaUSD_VES;
+      const vesEUR = usd * tasaEUR_VES;
+      precioInfo.innerHTML = `💵 Total con tasa USD: $${usd.toFixed(2)} = ${vesUSD.toLocaleString("es-VE",{minimumFractionDigits:2})} VES <br>💶 Total con tasa EUR: $${usd.toFixed(2)} = ${vesEUR.toLocaleString("es-VE",{minimumFractionDigits:2})} VES`;
+      document.getElementById('total_usd').value = usd.toFixed(2);
+      document.getElementById('total').value = vesUSD.toFixed(2);
+    }
+  });
+}
+
+async function cargarTasas(){
+  try{
+    const r = await fetch('https://open.er-api.com/v6/latest/USD',{cache:'no-store'});
+    const j = await r.json();
+    tasaUSD_VES = j.rates.VES;
+    const usdEUR = j.rates.EUR;
+    tasaEUR_VES = tasaUSD_VES / usdEUR;
+    document.getElementById('valorTasaUSD').textContent = `1 USD = ${tasaUSD_VES.toFixed(2)} VES`;
+    document.getElementById('valorTasaEUR').textContent = `1 EUR = ${tasaEUR_VES.toFixed(2)} VES`;
+    document.getElementById('tasa_actual').value = `${tasaUSD_VES.toFixed(2)} | ${tasaEUR_VES.toFixed(2)}`;
+    document.getElementById('tasa_usd_ves_num').value = tasaUSD_VES.toFixed(6);
+  }catch(e){
+    document.getElementById('valorTasaUSD').textContent = 'No disponible';
+    document.getElementById('valorTasaEUR').textContent = 'No disponible';
+  }
+}
+
+cargarInventario().then(actualizarCantidadYPrecio);
+cargarTasas();
+
+// Ubicación
+document.getElementById("getLocationBtn").addEventListener("click",function(){
+  const status = document.getElementById("locStatus");
+  if(navigator.geolocation){
+    status.style.display='block'; status.style.color='#3a6ea5'; status.textContent='Obteniendo ubicación…';
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const lat = pos.coords.latitude.toFixed(6);
+      const lon = pos.coords.longitude.toFixed(6);
+      const link = "https://www.google.com/maps?q="+lat+","+lon;
+      document.getElementById("ubicacion").value = link;
+      status.style.color='#1e6f2d'; status.textContent='✅ Ubicación enviada con éxito';
+    }, err=>{
+      status.style.color='#b54747'; status.textContent='No se pudo obtener la ubicación.';
+    }, {enableHighAccuracy:true, timeout:10000, maximumAge:0});
+  }else{
+    status.style.display='block'; status.style.color='#b54747'; status.textContent='Tu navegador no soporta geolocalización.';
+  }
+});
+
+// Envío Formulario
+document.getElementById("comprobanteForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+  const form = this;
+  const enviarBtn = document.getElementById("enviarBtn");
+  enviarBtn.disabled = true;
+
+  const formData = new FormData(form);
+
+  // Convertir archivo a base64 para Telegram
+  const fileInput = form.querySelector('input[name="comprobante"]');
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+
+  reader.onload = async function(event){
+    const base64File = event.target.result.split(',')[1];
+    formData.append('comprobante_base64', base64File);
+    formData.append('comprobante_name', file.name);
+
+    try{
+      // 1️⃣ Guardar en Google Sheets
+      const res = await fetch("https://script.google.com/macros/s/AKfycbxVMifzlzzNp6xpd8bTX42KkWuj6k9AE8OnO02XfVaw-NB50a5oKPD2_Sc7UK0mxQ1d/exec", {
+        method:"POST",
+        body: formData
+      });
+      const result = await res.json();
+      console.log("Resultado Sheets:", result);
+
+      if(result.status==="ok"){
+        document.getElementById("msgExito").style.display="block";
+        form.reset();
+        document.getElementById("precioInfo").textContent="";
+        document.getElementById("productoSelect").innerHTML='<option value="">Selecciona primero una categoría…</option>';
+        document.getElementById("cantidadSelect").innerHTML='<option value="">Selecciona la cantidad…</option>';
+        document.getElementById("locStatus").style.display="none";
+      }else{
+        alert("Error: "+result.message);
+      }
+
+    }catch(err){
+      console.error(err);
+      alert("No se pudo guardar el pedido. Intenta nuevamente.");
+    }finally{
+      enviarBtn.disabled = false;
+    }
+  };
+
+  reader.readAsDataURL(file);
+});
+</script>
